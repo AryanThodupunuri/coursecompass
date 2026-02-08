@@ -1,0 +1,8 @@
+# OS
+.DS_Store
+
+# Maven
+**/target/
+
+# Local secrets
+backend/src/main/resources/application-local.properties

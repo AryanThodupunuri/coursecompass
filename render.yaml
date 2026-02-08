@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: coursecompass-backend
+    runtime: java
+    plan: free
+    region: oregon
+    buildCommand: mvn -f backend/pom.xml -DskipTests package
+    startCommand: java -Dserver.port=$PORT -jar backend/target/backend-0.1.0-SNAPSHOT.jar
+    envVars:
+      - key: npg_vql9HNKwJoj2
+        sync: false
