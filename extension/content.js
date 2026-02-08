@@ -5,7 +5,7 @@
 // Production API base URL.
 // After deployment, set this to: https://<your-backend-host>/api/v1/analyze
 // For local development, keep localhost.
-const API_BASE = "http://localhost:8080/api/v1/analyze";
+const API_BASE = "https://course-compass-api.onrender.com/";
 
 function normalizeWhitespace(s) {
   return (s || "").replace(/\s+/g, " ").trim();
