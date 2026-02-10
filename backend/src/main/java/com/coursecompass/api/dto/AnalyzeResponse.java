@@ -7,5 +7,6 @@ public record AnalyzeResponse(
     String courseId,
     Double avgRating,
     String sentimentSummary,
-    List<String> redditTopThreads
+    List<String> redditTopThreads,
+    List<String> githubTopRepos
 ) {}

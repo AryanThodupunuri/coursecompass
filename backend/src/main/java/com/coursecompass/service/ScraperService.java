@@ -22,6 +22,7 @@ public class ScraperService {
 
   private static final String RMP_GRAPHQL_URL = "https://www.ratemyprofessors.com/graphql";
   private static final String RMP_REFERER = "https://www.ratemyprofessors.com/";
+  private static final String GITHUB_SEARCH_URL = "https://api.github.com/search/repositories";
   // UVA's internal school ID on RMP is not guaranteed stable; we keep it configurable.
   // Replace with the correct ID when you confirm it.
   private static final String RMP_UVA_SCHOOL_ID = "U2Nob29sLTEwOTQ="; // UVA School-1094
@@ -37,6 +38,7 @@ public class ScraperService {
     Double rating = null;
     String summary = null;
     List<String> reddit = Collections.emptyList();
+    List<String> github = Collections.emptyList();
 
     CourseCache cached = getCachedEntry(professorName, courseId).orElse(null);
     if (cached != null && cached.getAvgRating() != null && isCacheFresh(cached)) {
@@ -63,10 +65,16 @@ public class ScraperService {
       // no-op
     }
 
+    try {
+      github = fetchGithubTopRepos(professorName, courseId);
+    } catch (Exception ignored) {
+      // no-op
+    }
+
     // Persist cache (best-effort)
     persistCache(cached, professorName, courseId, rating, summary);
 
-    return new AnalyzeResponse(professorName, courseId, rating, summary, reddit);
+    return new AnalyzeResponse(professorName, courseId, rating, summary, reddit, github);
   }
 
   /**
@@ -222,6 +230,64 @@ public class ScraperService {
     }
 
     return titles;
+  }
+
+  /**
+   * Method C (GitHub)
+   *
+   * Uses the GitHub Search API to find relevant repos.
+   * Optionally uses a token if GITHUB_TOKEN is set (higher rate limits).
+   */
+  public List<String> fetchGithubTopRepos(String professorName, String courseId) throws IOException {
+    String query = (courseId + " " + professorName + " UVA").trim();
+    String q = URLEncoder.encode(query, StandardCharsets.UTF_8);
+    String url = GITHUB_SEARCH_URL + "?q=" + q + "&sort=stars&order=desc&per_page=3";
+
+    Connection connection = Jsoup.connect(url)
+        .timeout((int) Duration.ofSeconds(10).toMillis())
+        .ignoreContentType(true)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .userAgent("CourseCompass/0.1 (contact: local-dev)");
+
+    String token = System.getenv("GITHUB_TOKEN");
+    if (token != null && !token.isBlank()) {
+      connection.header("Authorization", "Bearer " + token.trim());
+    }
+
+    Connection.Response res = connection.method(Connection.Method.GET).execute();
+    String json = res.body();
+
+    List<String> repos = new ArrayList<>();
+    int from = 0;
+    while (repos.size() < 3) {
+      int nameIdx = json.indexOf("\"full_name\"", from);
+      if (nameIdx < 0) break;
+      int nameColon = json.indexOf(':', nameIdx);
+      if (nameColon < 0) break;
+      int nameStart = json.indexOf('"', nameColon + 1);
+      if (nameStart < 0) break;
+      int nameEnd = findStringEnd(json, nameStart + 1);
+      if (nameEnd < 0) break;
+
+      String fullName = unescapeJson(json.substring(nameStart + 1, nameEnd));
+
+      int urlIdx = json.indexOf("\"html_url\"", nameEnd);
+      if (urlIdx < 0) break;
+      int urlColon = json.indexOf(':', urlIdx);
+      if (urlColon < 0) break;
+      int urlStart = json.indexOf('"', urlColon + 1);
+      if (urlStart < 0) break;
+      int urlEnd = findStringEnd(json, urlStart + 1);
+      if (urlEnd < 0) break;
+
+      String htmlUrl = unescapeJson(json.substring(urlStart + 1, urlEnd));
+
+      repos.add(fullName + " — " + htmlUrl);
+      from = urlEnd + 1;
+    }
+
+    return repos;
   }
 
   private String summarizeFromRedditTitles(List<String> titles) {
