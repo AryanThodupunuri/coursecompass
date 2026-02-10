@@ -80,7 +80,7 @@ CourseCompass follows a client–server architecture optimized for performance a
 ---
 
 ## Project Structure
-
+```bash
 /extension
 ├── manifest.json
 ├── content scripts (DOM injection)
@@ -94,7 +94,7 @@ CourseCompass follows a client–server architecture optimized for performance a
 
 Dockerfile
 render.yaml
-
+```
 
 ---
 
@@ -112,7 +112,7 @@ src/main/resources/application.properties
 3. Run the application:
 ```bash
 mvn spring-boot:run
-
+```
 ### Data Flow
 
 <p align="center">
