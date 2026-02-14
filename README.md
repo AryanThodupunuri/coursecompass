@@ -27,7 +27,7 @@
 ---
 
 ## Overview
-CourseCompass is a full-stack intelligence engine designed to eliminate information asymmetry during the course registration process at the University of Virginia. The system consists of a Chrome extension that injects real-time professor sentiment and workload analytics directly into university course catalog interfaces such as Lou’s List.
+CourseCompass is a full-stack intelligence engine designed to eliminate information asymmetry during the course registration process at the University of Virginia. The system consists of a Chrome extension that injects real-time professor sentiment and workload analytics directly into university course catalog interfaces such as Hoos' List.
 
 Instead of relying on brittle, high-maintenance scrapers, the system uses a distributed architecture that mimics internal GraphQL queries and public JSON endpoints. This allows CourseCompass to aggregate data from RateMyProfessors and Reddit at scale without requiring expensive proxy services.
 
@@ -119,7 +119,7 @@ mvn spring-boot:run
   <img src="assets/CourseCompass_System_Overview.png" alt="CourseCompass Data Flow Diagram" width="800"/>
 </p>
 
-Trigger – User clicks the Analyze button injected into the Lou’s List table.
+Trigger – User clicks the Analyze button injected into Hoos' List.
 
 Request – The extension sends a GET request to the Spring Boot API.
 

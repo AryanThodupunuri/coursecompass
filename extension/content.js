@@ -1,20 +1,20 @@
 /* CourseCompass content script
- * Injects an "Analyze" button for each course row on louslist.org and calls local backend.
+ * Injects an "Analyze" button for each course row on Hoos' List and calls the backend.
  */
 
 // Production API base URL.
 // After deployment, set this to: https://<your-backend-host>/api/v1/analyze
 // For local development, keep localhost.
-const API_BASE = "https://course-compass-api.onrender.com/";
+const API_BASE = "https://course-compass-api.onrender.com/api/v1/analyze";
 
 function normalizeWhitespace(s) {
   return (s || "").replace(/\s+/g, " ").trim();
 }
 
-function parseCourseRow(tr) {
-  // Lou's List pages can vary, so we heuristically extract from the row text.
+function parseCourseRow(container) {
+  // Hoos' List pages can vary, so we heuristically extract from the row text.
   // Expected to find something like: "CS 3240 ... Sherriff, Mark ..."
-  const text = normalizeWhitespace(tr.innerText);
+  const text = normalizeWhitespace(container.innerText);
 
   // Course ID heuristic: department + number (e.g., "CS 3240", "STS 4500")
   const courseMatch = text.match(/\b([A-Z]{2,4})\s*(\d{4})\b/);
@@ -81,18 +81,24 @@ async function analyze(professorName, courseId) {
 }
 
 function maybeInjectButtons() {
-  const rows = Array.from(document.querySelectorAll("tr"));
-  if (!rows.length) return;
+  // Hoos' List uses a more modern layout than legacy Lou's List.
+  // We try rows first, then fall back to generic containers.
+  const rowCandidates = Array.from(document.querySelectorAll("tr"));
+  const containers = rowCandidates.length
+    ? rowCandidates
+    : Array.from(document.querySelectorAll("[role='row'], .row, .course-row, .search-result"));
 
-  for (const tr of rows) {
-    if (tr.dataset.courseCompassInjected === "true") continue;
+  if (!containers.length) return;
 
-    const { professorName, courseId } = parseCourseRow(tr);
+  for (const container of containers) {
+    if (container.dataset.courseCompassInjected === "true") continue;
+
+    const { professorName, courseId } = parseCourseRow(container);
     if (!professorName || !courseId) continue;
 
-    // Try to inject into the last cell; fallback to end of row.
-    const cells = tr.querySelectorAll("td, th");
-    const targetCell = cells.length ? cells[cells.length - 1] : tr;
+    // Try to inject into a right-aligned cell; fallback to end of container.
+    const cells = container.querySelectorAll("td, th, [role='cell']");
+    const targetCell = cells.length ? cells[cells.length - 1] : container;
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -137,7 +143,7 @@ function maybeInjectButtons() {
     });
 
     targetCell.appendChild(btn);
-    tr.dataset.courseCompassInjected = "true";
+    container.dataset.courseCompassInjected = "true";
   }
 }
 
